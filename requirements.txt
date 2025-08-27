@@ -4,3 +4,5 @@ numpy
 PyPDF2
 groq
 httpx
+flask
+gunicorn

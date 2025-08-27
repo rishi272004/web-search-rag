@@ -7,6 +7,8 @@ from flask import Flask, render_template, request, jsonify
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 from PyPDF2 import PdfReader
+import os
+from groq import Groq
 
 # ---------------- Config ----------------
 UPLOAD_FOLDER = "uploads"
@@ -20,7 +22,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ---------------- Init Models ----------------
 embedder = SentenceTransformer(EMBED_MODEL)
-client = Groq(api_key="GROQ_API_KEY")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
