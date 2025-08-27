@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wonder RAG AI Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Scrollbar for chat */
+    #chatBox::-webkit-scrollbar {
+      width: 8px;
+    }
+    #chatBox::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 100, 100, 0.5);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans flex flex-col items-center min-h-screen p-4">
+
+  <!-- Header -->
+  <header class="w-full max-w-4xl text-center mb-6">
+    <h1 class="text-4xl font-bold text-indigo-600">Wonder RAG AI Assistant</h1>
+    <p class="text-gray-600 mt-2">Upload your files and chat with AI in real-time</p>
+  </header>
+
+  <!-- Upload Section -->
+  <section class="w-full max-w-4xl bg-white rounded-2xl shadow p-6 mb-6">
+    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Upload a File</h2>
+    <form id="uploadForm" class="flex flex-col md:flex-row gap-4 items-center">
+      <input type="file" name="file" class="border border-gray-300 rounded-lg p-2 w-full md:w-auto" />
+      <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 transition">Upload</button>
+    </form>
+    <p id="uploadMsg" class="mt-4 text-green-600 font-medium"></p>
+  </section>
+
+  <!-- Chat Section -->
+  <section class="w-full max-w-4xl bg-white rounded-2xl shadow p-6 flex flex-col h-[500px]">
+    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Chat with AI</h2>
+
+    <!-- Chat Box -->
+    <div id="chatBox" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 rounded-lg mb-4">
+      <!-- Messages will appear here -->
+    </div>
+
+    <!-- Input -->
+    <div class="flex gap-2">
+      <input type="text" id="prompt" placeholder="Type your question..." class="border border-gray-300 rounded-lg p-2 flex-1" />
+      <button onclick="ask()" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700 transition">Send</button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-auto text-gray-500 text-sm">
+    Wonder RAG AI Assistant &copy; 2025
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Generate unique session id for chat memory
+    let session_id = crypto.randomUUID();
+
+    // Add message to chat box
+    function addMessage(role, text) {
+      const chatBox = document.getElementById("chatBox");
+      const msgDiv = document.createElement("div");
+      msgDiv.className = role === "user"
+        ? "text-right"
+        : "text-left";
+      msgDiv.innerHTML = `
+        <div class="${role === 'user' ? 'inline-block bg-indigo-600 text-white' : 'inline-block bg-gray-200 text-gray-800'} p-3 rounded-xl max-w-[80%] break-words">
+          ${text.replace(/\n/g, "<br>")}
+        </div>`;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight; // auto scroll
+    }
+
+    // Upload file
+    document.getElementById("uploadForm").onsubmit = async function(e) {
+      e.preventDefault();
+      let formData = new FormData(this);
+      document.getElementById("uploadMsg").textContent = "Uploading...";
+      let res = await fetch("/upload", { method: "POST", body: formData });
+      let data = await res.json();
+      document.getElementById("uploadMsg").textContent = data.message;
+    };
+
+    // Ask AI
+    async function ask() {
+      let prompt = document.getElementById("prompt").value;
+      if(!prompt) return alert("Please enter a question.");
+      addMessage("user", prompt);
+      document.getElementById("prompt").value = "";
+      
+      addMessage("assistant", "Thinking...");
+
+      let res = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, session_id })
+      });
+      let data = await res.json();
+      // Remove "Thinking..." message
+      const chatBox = document.getElementById("chatBox");
+      chatBox.removeChild(chatBox.lastChild);
+
+      if(data.status === "success") {
+        addMessage("assistant", data.answer);
+      } else {
+        addMessage("assistant", "Error: " + data.message);
+      }
+    }
+
+    // Press Enter to send
+    document.getElementById("prompt").addEventListener("keydown", function(e){
+      if(e.key === "Enter") { e.preventDefault(); ask(); }
+    });
+  </script>
+
+</body>
+</html>
